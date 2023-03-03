@@ -35,6 +35,7 @@ maxlbl.place(x=20, y=90)
 
 maxbox = ttk.Entry()
 maxbox.configure(state='normal', width=10)
+maxbox.insert(0, "10")
 maxbox.place(x=110, y=90)
 
 scrapingbutton = ttk.Button(root, text="スクレイピング実行", command=lambda:main(), width=40)
