@@ -55,7 +55,6 @@ def main():
     wb = openpyxl.load_workbook(path)
     ws = wb["list"]
     exs = wb["exlist"]
-    exs2 = wb["exlist2"]
     rownumber = 2
 
     # スクレイピング準備
@@ -99,12 +98,31 @@ def main():
             kwsearchbox.send_keys(exstr)
 
     # 件数上限設定
-    maxcnt = int(maxbox.get())
+    maxcnt = int(maxbox.get()) - 1
 
     # 検索ボタン押下
     searchbutton = driver.find_element(By.XPATH, "//*[@id='jobsearch']/button")
     searchbutton.click()
     time.sleep(3)
+
+    # 掲載日設定
+    wkdatebutton = []
+    wkdatebutton = driver.find_elements(By.CLASS_NAME, "yosegi-FilterPill-pill")
+    databutton = wkdatebutton[0]
+    databutton.click()
+    time.sleep(1)
+    wktwoweekbutton = []
+    wktwoweekbutton = driver.find_elements(By.CLASS_NAME, "yosegi-FilterPill-dropdownListItemLink")
+    twoweekbutton = wktwoweekbutton[3]
+    twoweekbutton.click()
+    time.sleep(2)
+
+    # 掲載順設定
+    wkorderbutton = driver.find_elements(By.LINK_TEXT, "日付順")
+    if len(wkorderbutton) != 0:
+        orderbutton = wkorderbutton[0]
+        orderbutton.click()
+        time.sleep(3)
 
     while True:
 
@@ -112,14 +130,21 @@ def main():
         companynames = []
         contents = []
 
-        # 各案件ボタン
-        buttons = []
-        buttons = driver.find_elements(By.CLASS_NAME, "css-1m4cuuf.e37uo190")
-
         # Cookie同意
         ckbutton = driver.find_elements(By.CLASS_NAME, "gnav-CookiePrivacyNoticeButton")
         if len(ckbutton) != 0:
             ckbutton[0].click()
+
+        # 各案件ボタン
+        buttons = []
+        buttons = driver.find_elements(By.CLASS_NAME, "css-1m4cuuf.e37uo190")
+
+        # 掲載時間/日取得
+        datehours = []
+        wkdatehours = driver.find_elements(By.CLASS_NAME, "date")
+        for wkdatehour in wkdatehours:
+            if len(wkdatehour.text) != 0:
+                datehours.append(wkdatehour.text[7:])
 
         # スクレイピング実行
         spcnt = 0
@@ -144,7 +169,8 @@ def main():
         idx = 0
         for companyname in companynames:
             ws.cell(rownumber, 1).value = companyname
-            ws.cell(rownumber, 2).value = contents[idx]
+            ws.cell(rownumber, 2).value = datehours[idx]
+            ws.cell(rownumber, 3).value = contents[idx]
             idx += 1
             rownumber += 1
 
@@ -167,41 +193,6 @@ def main():
     time.sleep(5)
     driver.close()
     driver.quit()
-
-    # 除外キーワード削除処理
-    dellist = []
-    dellistfl = []
-    delchk = False
-    listrow = 2
-    delmax = exs2.max_row
-    listmaxrow = ws.max_row
-    wkdelrows = ""
-    delrows = ""
-
-    for listrow in range(2, listmaxrow + 1):
-        delchk = False
-        liststr = ws.cell(listrow, 1).value
-        if liststr != None:
-            # 除外シート設定
-            for delrow in range(1, delmax + 1):
-                delstr = exs2.cell(delrow, 1).value
-                if delstr != None:
-                    if liststr.__contains__(delstr):
-                        delchk = True
-                        break
-            if delchk == True:
-                dellist.append(listrow)
-
-    # 行削除
-    delcnt = 0
-    if len(dellist) !=0:
-        dellist.sort()
-        for delrownum in dellist:
-            ws.delete_rows(delrownum - delcnt)
-            delcnt += 1
-
-    wb.save(path)
-    wb.close()
 
 def ResourcePath(relativePath):
     try:
